@@ -7,10 +7,7 @@ const tweetSchema = new Schema(
       type: String,
       require: true,
     },
-    videos: {
-      type: Schema.Types.ObjectId,
-      ref: "Video",
-    },
+
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -19,5 +16,4 @@ const tweetSchema = new Schema(
   { timestamps: true }
 );
 
-tweetSchema.plugin(mongooseAggregatePaginate);
 export const Tweet = mongoose.model("Tweet", tweetSchema);
