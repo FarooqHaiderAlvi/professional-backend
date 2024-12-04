@@ -49,7 +49,7 @@ router
 
 router
   .route("/update-cover-image")
-  .post(verifyJWT, upload("avatar"), updateCoverImage);
+  .post(verifyJWT, upload.single("coverImage"), updateCoverImage);
 
 router
   .route("/user-channel-profile/:username")

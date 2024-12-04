@@ -1,17 +1,22 @@
-import mongoose from "mongoose";
-import { DB_NAME } from "./constants.js";
-import connectDB from "./db/index.js";
-import dotenv from "dotenv";
-import app from "./app.js";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+const app = express();
 
-dotenv.config({
-  path: "./env",
-});
-
-connectDB()
-  .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(`Listening on Port: ${process.env.PORT}`);
-    });
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
   })
-  .catch((error) => console.log("Database connection failure:", error));
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
+app.use(cookieParser());
+
+import userRouter from "./routes/user.route.js";
+
+app.use("/api/v1/users", userRouter);
+
+export default app;
