@@ -71,8 +71,15 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   console.log(createdUser);
   console.log("user is created");
-  res.cookie("auth_token", createdUser.accessToken, {
+  res.cookie("access_token", createdUser.accessToken, {
     httpOnly: false,    // Prevent JavaScript access
+    sameSite: "lax",   // Default for most use cases in dev
+    maxAge: 5 * 60 * 60 * 1000, // 1-day expiry
+    secure: true,     // Allow HTTP during development for localhost otherwise cookie will not be
+    path: "/",         // Ensure cookie is accessible site-wide
+  });
+  res.cookie("refresh_token", createdUser.refreshToken, {
+    httpOnly: true,    // Prevent JavaScript access
     sameSite: "lax",   // Default for most use cases in dev
     maxAge: 24 * 60 * 60 * 1000, // 1-day expiry
     secure: true,     // Allow HTTP during development for localhost otherwise cookie will not be
@@ -118,8 +125,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("access_token", accessToken, options)
+    .cookie("refresh_token", refreshToken, options)
     .json(
       new ApiResponse(
         200,
@@ -231,6 +238,28 @@ const changePassword = asyncHandler(async (req, res) => {
 });
 
 const getLoggedInUser = asyncHandler(async (req, res) => {
+
+  const createdUser = await generateTokens(req.user._id);
+  if (!createdUser) {
+    throw new ApiError(500, "Somethign went wrong...");
+  }
+  console.log(createdUser);
+  console.log("user is created");
+  res.cookie("access_token", createdUser.accessToken, {
+    httpOnly: false,
+    sameSite: "lax",
+    maxAge: 5 * 60 * 60 * 1000,
+    secure: true,
+    path: "/",
+  });
+  res.cookie("refresh_token", createdUser.refreshToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: true,
+    path: "/",
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "User fetched successfully."));
