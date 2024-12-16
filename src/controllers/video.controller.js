@@ -55,8 +55,54 @@ const publishVideo = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
   //TODO: get all videos based on query, sort, pagination
+
+  const videos = await Video.aggregate([
+    {
+      // Perform a lookup to join with the users collection
+      $lookup: {
+        from: "users", // The name of the users collection
+        localField: "owner", // The field in videos containing the user's _id
+        foreignField: "_id", // The field in users to match the _id
+        as: "userDetails" // The resulting field where user data will be added
+      }
+    },
+    {
+      // Unwind the userDetails array to get individual objects
+      $unwind: {
+        path: "$userDetails",
+        preserveNullAndEmptyArrays: true // In case there's no matching user, keep the video
+      }
+    },
+    {
+      // Project the fields you want in the final output
+      $project: {
+        _id: 1, // Include the video ID
+        title: 1, // Include the title from the videos collection
+        videoFile: 1, // Include the video URL
+        thumbnail: 1,
+        duration: 1,
+        description: 1,
+        views: 1,
+
+        "userDetails.username": 1, // Include username from the users collection
+        "userDetails.avatar": 1 // Include avatar from the users collection
+      }
+    }
+  ]);
+
+  console.log('...video', videos, '...end')
+
+  if (!videos) {
+    throw new ApiError(500, "Something went wrong");
+  }
+
+  //return all videos
+  return res
+    .status(200)
+    .json(new ApiResponse(200, videos, "All videos fetched."));
+
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
