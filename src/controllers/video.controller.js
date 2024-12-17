@@ -6,6 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { getVideoDurationInSeconds } from 'get-video-duration'
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { ObjectId } from "mongodb";
+
 
 const publishVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
@@ -107,7 +109,53 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params
-  //TODO: get video by id
+  console.log('iam in get video id')
+  console.log(videoId)
+  const video = await Video.aggregate([
+    {
+      $match: {
+        _id: new ObjectId(`${videoId}`), // here i am sending it id as a string if i want to send id as a number now i need to do it like objectId.createFromHexString(videoId)
+      },
+    },
+    {
+
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "userDetails"
+      }
+    },
+    {
+
+      $unwind: {
+        path: "$userDetails",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+
+      $project: {
+        _id: 1,
+        title: 1,
+        videoFile: 1,
+        thumbnail: 1,
+        duration: 1,
+        description: 1,
+        views: 1,
+
+        "userDetails.username": 1, // Include username from the users collection
+        "userDetails.avatar": 1 // Include avatar from the users collection
+      }
+    }
+  ])
+
+  if (!video) {
+    throw new ApiError(500, "Something went wrong");
+  }
+
+  return res.status(200).json(new ApiResponse(200, video, "video fetched."))
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
