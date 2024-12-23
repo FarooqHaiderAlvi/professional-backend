@@ -10,13 +10,16 @@ app.use(
   })
 );
 
-app.use(express.json()); //accepting json data
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use(cookieParser()); 
+app.use(cookieParser());
 
 import userRouter from "./routes/user.route.js";
+import videoRouter from "./routes/video.route.js"
+import commentRouter from './routes/comment.route.js'
 
 app.use("/api/v1/users", userRouter);
-
+app.use("/api/v1/videos", videoRouter)
+app.use("/api/v1/comments", commentRouter)
 export default app;
