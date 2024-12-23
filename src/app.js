@@ -10,10 +10,10 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json()); //accepting json data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use(cookieParser());
+app.use(cookieParser()); 
 
 import userRouter from "./routes/user.route.js";
 

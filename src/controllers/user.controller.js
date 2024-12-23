@@ -15,7 +15,7 @@ const generateTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new ApiError(500, "Something went wrond");
+    throw new ApiError(500, "Something went wrong");
   }
 };
 
@@ -101,6 +101,8 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
+  const decoded = jwt.decode(accessToken);  // Decode the token (no signature check)
+  console.log("Decoded Token:", decoded);
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -242,7 +244,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
     {
       $set: { avatar: avatar.url },
     },
-    { new: true }
+    { new: true } //  «Boolean» if true, return the modified document rather than the original
   ).select("-password");
 
   return res
