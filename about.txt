@@ -1,0 +1,55 @@
+gitignore generators to generate gitignore files online
+
+Prettier is an opinionated code formatter
+npm i prettierrc as dev dependency to set proper indentation and formatting setting
+
+we can online check prettierrc and prettierrcignore generators
+
+
+In Express.js, the .use() method is a way to define middleware 
+functions that will be executed during the request-response cycle.
+Middleware in Express are functions that have access 
+to the request object (req), the response object (res),
+ and the next middleware function in the application's
+  request-response cycle.
+
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+  })
+);
+When credentials: true is set, it allows the browser to send
+ cookies or HTTP authentication information (such as tokens) 
+ along with the request to a server on a different origin 
+ (i.e., a cross-origin request).
+
+
+The URL-encoded data sent in the request body would look like this:
+
+name=John+Doe&age=25
+The express.urlencoded() middleware helps you parse this data into a JavaScript object so that you can access the values easily.
+
+access tokens are short lived and refresh tokens are long lived,
+Access tokens are used to access resources, 
+while refresh tokens are used to get new access tokens when the
+ old ones expire.
+
+
+///////////////
+here User represents mongoose object that can communicate with db table 
+we can call mongoose methods like findOne,update, 
+but the methods that we define in our user model are accessible
+by the user instance returned by the User.findOne query
+  const isValidPass = await user.isPasswordCorrect(password);
+  if (!isValidPass) {
+    throw new ApiError(400, "Invalid credentials.");
+  }
+  const { accessToken, refreshToken } = await generateTokens(user._id);
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+///////////////////
