@@ -3,11 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js"
 import { ObjectId } from "mongodb";
 import { Comment } from "../models/comment.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { getVideoDurationInSeconds } from 'get-video-duration'
-import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 
 
 const getVideoComments = asyncHandler(async (req, res) => {
@@ -50,7 +46,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     throw new ApiError(500, 'Something went wrong')
   }
   console.log(comments)
-  return res.status(200).json(new ApiResponse(200, comments, "comment added successfully!"))
+  return res.status(200).json(new ApiResponse(200, comments, "comments fetched successfully!"))
 
 })
 
@@ -75,10 +71,41 @@ const addComment = asyncHandler(async (req, res) => {
 
 const updateComment = asyncHandler(async (req, res) => {
   // TODO: update a comment
+  const { commentId } = req.params;
+  const { content } = req.body;
+
+  const comment = await Comment.findById(commentId);
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to update this comment');
+  }
+
+  const updatedComment = await Comment.findByIdAndUpdate(commentId, { content: content }, { new: true })
+
+  if (!updatedComment) {
+    throw new ApiError(500, 'Something went wrong')
+  }
+  console.log(comment)
+  return res.status(200).json(new ApiResponse(200, updatedComment, "comment updated successfully!"))
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
   // TODO: delete a comment
+  const { commentId } = req.params;
+
+  const comment = await Comment.findById(commentId);
+  console.log(comment.owner, req.user._id)
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to delete this comment');
+  }
+
+  const deletedComment = await Comment.findByIdAndDelete(commentId);
+
+  if (!deletedComment) {
+    throw new ApiError(500, 'Something went wrong')
+  }
+  console.log(deletedComment)
+  return res.status(200).json(new ApiResponse(200, deletedComment, "comment deleted successfully!"))
 })
 
 export {
