@@ -25,4 +25,34 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export { uploadOnCloudinary };
+const deleteFromCloudinary = async (fileUrl, resourceType) => {
+
+  try {
+
+    const publicId = fileUrl.split('/').pop().split('.')[0];
+    console.log(`Public ID: ${publicId}`);
+
+    // Attempt to delete the file from Cloudinary
+    const response = await cloudinary.uploader.destroy(`folder/${publicId}`, {
+      resource_type: "video",
+      invalidate: true,
+      type: 'authenticated'
+    });
+
+    console.log(`${resourceType} file is deleted from Cloudinary`, response);
+
+    // Check if the response indicates success
+    if (response.result === 'ok') {
+      console.log('File successfully deleted and invalidated.');
+    } else {
+      console.log('File deletion response:', response);
+    }
+
+    return response;
+  } catch (error) {
+    console.log('Error deleting file: =>', error);
+    return null;
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
