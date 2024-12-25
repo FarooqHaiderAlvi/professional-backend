@@ -71,7 +71,7 @@ userSchema.methods.generateAccessToken = function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: '50s'
+      expiresIn: '1d'
     }
   );
 };

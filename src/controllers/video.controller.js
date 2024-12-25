@@ -1,7 +1,7 @@
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getVideoDurationInSeconds } from 'get-video-duration'
 import jwt from "jsonwebtoken";
@@ -118,7 +118,6 @@ const getVideoById = asyncHandler(async (req, res) => {
       },
     },
     {
-
       $lookup: {
         from: "users",
         localField: "owner",
@@ -127,14 +126,12 @@ const getVideoById = asyncHandler(async (req, res) => {
       }
     },
     {
-
       $unwind: {
         path: "$userDetails",
         preserveNullAndEmptyArrays: true
       }
     },
     {
-
       $project: {
         _id: 1,
         title: 1,
@@ -159,7 +156,72 @@ const getVideoById = asyncHandler(async (req, res) => {
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
-  const { videoId } = req.params
+  const { videoId } = req.params;
+  const { title, description } = req.body;
+  const video = await Video.findById(videoId);
+  console.log(video)
+  if (video.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to update this video');
+  }
+
+  if (
+    [title, description].some((field) => field?.trim() === "")
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const videoFilePath = req.files?.videoFile[0]?.path;
+  const thumbnailPath = req.files?.thumbnail[0]?.path;
+  console.log(videoFilePath, thumbnailPath, 'iam path');
+  if (!videoFilePath || !thumbnailPath) {
+    throw new ApiError(400, "video and thumbnail required");
+  }
+
+  //get video duration 
+  const duration = Math.floor(await getVideoDurationInSeconds(videoFilePath));
+
+  const videoFile = await uploadOnCloudinary(videoFilePath);
+  console.log('video uploaded');
+  const thumbnail = await uploadOnCloudinary(thumbnailPath);
+  console.log('thumbnail uploaded')
+
+  if (!videoFile || !thumbnail) {
+    throw new ApiError(400, "Oops! something went wrong");
+  }
+  const tempVideo = video.videoFile;
+  const tempThumbnail = video.thumbnail;
+
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: { videoFile: videoFile?.url || tempVideo, thumbnail: thumbnail?.url || tempThumbnail, title: title, description: description, duration: duration },
+    },
+    { new: true }
+  )
+
+  if (updatedVideo.videoFile !== tempVideo) {
+    deleteFromCloudinary(tempVideo, 'video')
+  }
+  if (updatedVideo.thumbnail !== tempThumbnail) {
+    deleteFromCloudinary(tempThumbnail, 'image')
+  }
+
+  if (!updatedVideo) {
+    throw new ApiError(500, "Somethign went wrong...");
+  }
+  else {
+
+  }
+
+  console.log(updatedVideo);
+  console.log("Video uploaded");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video updated Successfully."));
+
+
   //TODO: update video details like title, description, thumbnail
 
 })
