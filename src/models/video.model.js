@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2"; 
-
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import { Comment } from "./comment.model.js";
+import { Like } from "./like.model.js";
 const videoSchema = new Schema(
   {
     videoFile: {
@@ -40,6 +41,24 @@ const videoSchema = new Schema(
     timestamps: true,
   }
 );
+
+videoSchema.post("findOneAndDelete", async function (doc, next) {
+  console.log("i am findOneAndDelete");
+
+  try {
+    // Delete related comments
+    await Comment.deleteMany({ video: doc._id });
+
+    // Delete related likes
+    await Like.deleteMany({ video: doc._id });
+
+    next(); // Proceed with video deletion
+  } catch (error) {
+    console.error(error, "error in findOneAndDelete");
+    next(error); // Pass errors to Mongoose
+  }
+  next();
+});
 
 videoSchema.plugin(mongooseAggregatePaginate);
 
