@@ -19,10 +19,8 @@ const generateTokens = async (userId) => {
   }
 };
 
-
-
 const registerUser = asyncHandler(async (req, res) => {
-  console.log('in register user');
+  console.log("in register user");
   const { username, fullName, password, email } = req.body;
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
@@ -46,7 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "avatar field is required.");
   }
   const avatar = await uploadOnCloudinary(avatarPath);
-  console.log('avatar uploaded');
+  console.log("avatar uploaded");
   const coverImage = await uploadOnCloudinary(coverImagePath);
 
   if (!avatar) {
@@ -72,26 +70,24 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log(createdUser);
   console.log("user is created");
   res.cookie("access_token", createdUser.accessToken, {
-    httpOnly: false,    // Prevent JavaScript access
-    sameSite: "lax",   // Default for most use cases in dev
+    httpOnly: false, // Prevent JavaScript access
+    sameSite: "lax", // Default for most use cases in dev
     maxAge: 5 * 60 * 60 * 1000, // 1-day expiry
-    secure: true,     // Allow HTTP during development for localhost otherwise cookie will not be
-    path: "/",         // Ensure cookie is accessible site-wide
+    secure: true, // Allow HTTP during development for localhost otherwise cookie will not be
+    path: "/", // Ensure cookie is accessible site-wide
   });
   res.cookie("refresh_token", createdUser.refreshToken, {
-    httpOnly: true,    // Prevent JavaScript access
-    sameSite: "lax",   // Default for most use cases in dev
+    httpOnly: true, // Prevent JavaScript access
+    sameSite: "lax", // Default for most use cases in dev
     maxAge: 24 * 60 * 60 * 1000, // 1-day expiry
-    secure: true,     // Allow HTTP during development for localhost otherwise cookie will not be
-    path: "/",         // Ensure cookie is accessible site-wide
+    secure: true, // Allow HTTP during development for localhost otherwise cookie will not be
+    path: "/", // Ensure cookie is accessible site-wide
   });
-
 
   return res
     .status(200)
     .json(new ApiResponse(200, createdUser, "User created Successfully."));
 });
-
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
@@ -123,7 +119,7 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  const decoded = jwt.decode(accessToken);  // Decode the token (no signature check)
+  const decoded = jwt.decode(accessToken); // Decode the token (no signature check)
   console.log("Decoded Token:", decoded);
   return res
     .status(200)
@@ -137,8 +133,6 @@ const loginUser = asyncHandler(async (req, res) => {
       )
     );
 });
-
-
 
 const logOutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
@@ -164,8 +158,6 @@ const logOutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged Out."));
 });
-
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingToken = req.cookies?.refreshToken || req.body.refreshToken;
@@ -210,8 +202,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-
-
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword, confPassword } = req.body;
 
@@ -236,11 +226,9 @@ const changePassword = asyncHandler(async (req, res) => {
   } catch (err) {
     throw new ApiError(500, err);
   }
-
 });
 
 const getLoggedInUser = asyncHandler(async (req, res) => {
-
   const createdUser = await generateTokens(req.user._id);
   if (!createdUser) {
     throw new ApiError(500, "Somethign went wrong...");
@@ -335,15 +323,11 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User cover Image updated successfully."));
 });
 
-
-
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
   if (!username?.trim()) {
     throw new ApiError(400, "username is missing");
   }
-
-
 
   const channel = await User.aggregate([
     {
@@ -373,7 +357,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         channelSubscribedTo: { $size: "$subscribedTo" },
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user_id, "$subscribers.subscriber"] },
+            if: {
+              $in: [
+                new mongoose.Types.ObjectId(req.user._id),
+                "$subscribers.subscriber",
+              ],
+            },
             then: true,
             else: false,
           },
@@ -390,6 +379,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         coverImage: 1,
         isSubscribed: 1,
         email: 1,
+        // subscribers: 1,
       },
     },
   ]);
@@ -402,8 +392,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, channel[0], "channel fetched Successfully."));
 });
-
-
 
 const getUserWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
