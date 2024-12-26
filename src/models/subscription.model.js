@@ -1,5 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import { removeAllListeners } from "nodemon";
 
 const subscriptionSchema = new mongoose.Schema(
   {

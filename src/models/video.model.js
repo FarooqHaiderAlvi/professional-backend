@@ -43,8 +43,6 @@ const videoSchema = new Schema(
 );
 
 videoSchema.post("findOneAndDelete", async function (doc, next) {
-  console.log("i am findOneAndDelete");
-
   try {
     // Delete related comments
     await Comment.deleteMany({ video: doc._id });
@@ -57,7 +55,6 @@ videoSchema.post("findOneAndDelete", async function (doc, next) {
     console.error(error, "error in findOneAndDelete");
     next(error); // Pass errors to Mongoose
   }
-  next();
 });
 
 videoSchema.plugin(mongooseAggregatePaginate);
