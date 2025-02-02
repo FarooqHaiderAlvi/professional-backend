@@ -449,6 +449,37 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const addVideoToWatchHistory = asyncHandler(async (req, res) => {
+  console.log("i am in add video to watch history");
+  const { videoId } = req.params;
+  if (!videoId) {
+    throw new ApiError(400, "videoId is required.");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $addToSet: { watchHistory: videoId },
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new ApiError(500, "Something went wrong.");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, user.watchHistory, "Video added to watch history.")
+    );
+});
+
+const errorHandler = (err, req, res, next) => {
+  console.log("error", err);
+  throw new ApiError(err.code || 500, err.message || "Something went wrong.");
+};
+
 export {
   registerUser,
   loginUser,
@@ -461,4 +492,6 @@ export {
   updateCoverImage,
   getUserChannelProfile,
   getUserWatchHistory,
+  addVideoToWatchHistory,
+  errorHandler,
 };
