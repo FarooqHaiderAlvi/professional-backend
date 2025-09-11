@@ -4,12 +4,21 @@ import { Video } from "../models/video.model.js"
 import { ObjectId } from "mongodb";
 import { Comment } from "../models/comment.model.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import redisClient from "../db/redisClient.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
   //TODO: get all comments for a video
   const { videoId } = req.params
   // const { page = 1, limit = 10 } = req.query
+  const cacheKey = `video-comments-${videoId}`;
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    console.log("Cache hit for comments✅");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cached), "comments fetched successfully!"))
+  }
+  console.log("Cache miss ❌ — querying MongoDB for comments");
 
   const comments = await Comment.aggregate([
     {
@@ -46,6 +55,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
     throw new ApiError(500, 'Something went wrong')
   }
   console.log(comments)
+  await redisClient
+    .set(cacheKey, JSON.stringify(comments), { EX: 60 }); // Cache for 60 seconds
   return res.status(200).json(new ApiResponse(200, comments, "comments fetched successfully!"))
 
 })

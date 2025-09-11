@@ -8,9 +8,8 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getVideoDurationInSeconds } from "get-video-duration";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
-
+import redisClient from "../db/redisClient.js";
 const publishVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
   if ([title, description].some((field) => field?.trim() === "")) {
@@ -56,59 +55,70 @@ const publishVideo = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-  //TODO: get all videos based on query, sort, pagination
+  const cacheKey = "all_videos"; // could make it dynamic with query params
 
+  // 1. Try cache
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    console.log("Cache hit ✅");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cached), "All videos fetched (cache)."));
+  }
+
+  console.log("Cache miss ❌ — querying MongoDB");
+
+  // 2. Query MongoDB
   const videos = await Video.aggregate([
     {
-      // Perform a lookup to join with the users collection
       $lookup: {
-        from: "users", // The name of the users collection
-        localField: "owner", // The field in videos containing the user's _id
-        foreignField: "_id", // The field in users to match the _id
-        as: "userDetails", // The resulting field where user data will be added
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "userDetails",
       },
     },
+    { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
     {
-      // Unwind the userDetails array to get individual objects
-      $unwind: {
-        path: "$userDetails",
-        preserveNullAndEmptyArrays: true, // In case there's no matching user, keep the video
-      },
-    },
-    {
-      // Project the fields you want in the final output
       $project: {
-        _id: 1, // Include the video ID
-        title: 1, // Include the title from the videos collection
-        videoFile: 1, // Include the video URL
+        _id: 1,
+        title: 1,
+        videoFile: 1,
         thumbnail: 1,
         duration: 1,
         description: 1,
         views: 1,
-
-        "userDetails.username": 1, // Include username from the users collection
-        "userDetails.avatar": 1, // Include avatar from the users collection
+        "userDetails.username": 1,
+        "userDetails.avatar": 1,
       },
     },
   ]);
 
-  console.log("...video", videos, "...end");
+  if (!videos) throw new ApiError(500, "Something went wrong");
 
-  if (!videos) {
-    throw new ApiError(500, "Something went wrong");
-  }
+  // 3. Save to cache (with TTL e.g. 60 seconds)
+  await redisClient.set(cacheKey, JSON.stringify(videos), { EX: 60 });
 
-  //return all videos
   return res
     .status(200)
-    .json(new ApiResponse(200, videos, "All videos fetched."));
+    .json(new ApiResponse(200, videos, "All videos fetched (DB)."));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   console.log("iam in get video id");
   console.log(videoId);
+  const cacheKey = videoId; // could make it dynamic with query params
+
+  // 1. Try cache
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    console.log("Cache hit for single video ✅");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cached), "video fetched."));
+  }
+
   const video = await Video.aggregate([
     {
       $match: {
@@ -148,7 +158,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(500, "Something went wrong");
   }
-
+  await redisClient.set(cacheKey, JSON.stringify(video), { EX: 60 });
   return res.status(200).json(new ApiResponse(200, video, "video fetched."));
 });
 
