@@ -11,9 +11,12 @@ import {
   updateAccountDetails,
   updateAvatar,
   updateCoverImage,
+  addVideoToWatchHistory,
+  errorHandler,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { error } from "console";
 
 const router = Router();
 
@@ -57,4 +60,7 @@ router
 
 router.route("/history").get(verifyJWT, getUserWatchHistory);
 
+router
+  .route("/history/:videoId")
+  .put(verifyJWT, addVideoToWatchHistory, errorHandler);
 export default router;
