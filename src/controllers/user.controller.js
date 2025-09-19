@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import './../utils/passport.js';
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 const generateTokens = async (userId) => {
@@ -494,4 +495,5 @@ export {
   getUserWatchHistory,
   addVideoToWatchHistory,
   errorHandler,
+  generateTokens,
 };

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import passport from "passport";
 const app = express();
 
 app.use(
@@ -10,6 +11,7 @@ app.use(
   })
 );
 
+app.use(passport.initialize());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -19,7 +21,10 @@ import userRouter from "./routes/user.route.js";
 import videoRouter from "./routes/video.route.js";
 import commentRouter from "./routes/comment.route.js";
 import subscriptionRouter from "./routes/subscription.route.js";
+import googleAuthRouter from "./routes/googleAuth.route.js";
 
+
+app.use("/auth", googleAuthRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/comments", commentRouter);
